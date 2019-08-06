@@ -11,9 +11,10 @@ class RealRecordingsV1(Dataset):
         super().__init__()
         assert dtype in ["01", "02", "10"]
         self.type = dtype
+        print(f'Variant : {self.type}')
         
         if path is None:
-            path = os.path.join(RECORDINGS_PATH, "real-recordings-01-02-10-v1.hdf5")
+            path = os.path.join(RECORDINGS_PATH, "real-recordings-01-02-10-v1-comp.hdf5")
 
         f = h5py.File(path, 'r')
         self.real_posvel = f.get(f"/{dtype}/real_posvel")
