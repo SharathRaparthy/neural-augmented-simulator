@@ -1,6 +1,6 @@
 try:
     from comet_ml import Experiment
-    comet_loaded = True
+    comet_loaded = False
 except ImportError:
     comet_loaded = False
 
@@ -159,20 +159,29 @@ def main():
                     rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step])
             #Incorporating LSTM in the PPO loop ---------------------------
+            # TODO: Normalize the observations and actions coz some values are greater than 1. Check with Florian.
             last_obs = torch.zeros(1, 12).float()
             last_obs[:, [1, 2, 4, 5, 7, 8, 10, 11]] = obs[:, :8].cpu()
             # Observe reward and next obs
-            # action = torch.FloatTensor(np.insert(np.insert(action.cpu().numpy(),0,0),3,0)).to(device)
             new_obs, reward, done, infos = envs.step(action)
             action_input = np.insert(np.insert(action.cpu().numpy(), 0, 0), 3, 0)
             obs_modified = torch.zeros(1,12).float()
             obs_modified[:, [1, 2, 4, 5, 7, 8, 10, 11]] = new_obs[:, :8].cpu()
-            input_tensor = torch.FloatTensor(np.hstack((last_obs.numpy(), np.expand_dims(action_input, axis=0), obs_modified.numpy()))).unsqueeze(0).to(device) # Uqueeze because LSTM requires 3 dim input
+            input_tensor = torch.FloatTensor(np.hstack((last_obs.numpy(), np.expand_dims(action_input, axis=0),
+                                                        obs_modified.numpy()))).unsqueeze(0).to(device) # Unsqueeze because LSTM requires 3 dim input
+
+            '''Checking the outputs'''
+            # print(f'The action produced by PPO is {action}')
+            # print(f'The action input to the LSTM is {action_input}')
+            # print(f"The observation before is {obs}")
+            # print(f'The last observation is {last_obs}')
+            # print(f"The input to the LSTM is {input_tensor}")
+            # print(f'The modified observation is {obs_modified}')
             with torch.no_grad():
                 diff = lstm_net.forward(input_tensor)
-            pred_obs = torch.FloatTensor(diff.cpu().numpy() + input_tensor.cpu().numpy()[:, :, 18:]).squeeze(0)
+            pred_obs = torch.FloatTensor(diff.cpu().numpy() + input_tensor.cpu().numpy()[:, :, 18:]).squeeze(0) # squeeze because PPO takes 2 dim input
             new_obs[:, :8] = pred_obs[:, [1, 2, 4, 5, 7, 8, 10, 11]]
-            obs = new_obs.to(device) # squeeze because PPO takes 2 dim input
+            obs = new_obs.to(device)
 
             for idx, info in enumerate(infos):
                 if 'episode' in info.keys():
