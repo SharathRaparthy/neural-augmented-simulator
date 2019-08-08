@@ -142,9 +142,9 @@ for i in range(3):
     if i == 0:
         dataset = "01"
     if i == 1:
-        dataset = "02"
-    if i == 2:
         dataset = "10"
+    if i == 2:
+        dataset = "02"
     data = pickle.load(
         open(os.path.join(RECORDINGS_PATH, f"{dataset}-lstm-data.pkl"), "rb"))
 
